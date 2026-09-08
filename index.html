@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Energy Physics Simulation</title>
+        <style>
+            body {font-family: sans-serif; display: flex;flex-direction: column;align-items: center;background: #121212;color: #fff;}
+            canvas {border: 2px solid #444;background: #1e1e1e;}
+            .controls {margin-top:10px; display:flex; gap:15px;}
+        </style>
+    </head>
+    <body>
+
+        <h2>Energy Conservation Simulation</h2>
+        <canvas id="simCanvas" width="600" height="400"></canvas>
+
+        <div class="controls">
+            <label>Gravity: <input type="range" id="gravity" min="1" max="20" value="9.8" step="0.1"</label>
+            <label>Resititution(Bounciness): <input type="range" id="bounce" min="0.1" max="1.0" value="0.8" step="0.05"</label>
+            <button onclick="resetBall()">Reset</button>
+        </div>
+
+        <script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+// Simulation parameters
+const mass = 1; // kg
+let g = 9.8;    // m/s^2 (scaled for canvas)
+let bounce = 0.8; // Elasticity coefficient
+
+let ball = { x: 300, y: 50, radius: 15, vx: 2, vy: 0 };
+const groundY = canvas.height - 30;
+
+function resetBall() {
+  ball.x = 300;
+  ball.y = 50;
+  ball.vx = 2;
+  ball.vy = 0;
+}
+
+function updatePhysics(dt) {
+  g = parseFloat(document.getElementById('gravity').value);
+  bounce = parseFloat(document.getElementById('bounce').value);
+
+  // Apply acceleration due to gravity
+  ball.vy += g * dt * 20; // scaled scale factor for visual physics
+
+  // Update positions
+  ball.x += ball.vx;
+  ball.y += ball.vy * dt * 10;
+
+  // Collision with ground
+  if (ball.y + ball.radius >= groundY) {
+    ball.y = groundY - ball.radius;
+    ball.vy = -ball.vy * bounce; // Kinetic energy loss on impact
+  }
+
+  // Wall bounces
+  if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= canvas.width) {
+    ball.vx = -ball.vx;
+  }
+}
+
+function drawBar(x, y, width, height, color, label) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = '#fff';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(label, x, y - 5);
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw Ground
+  ctx.fillStyle = '#555';
+  ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+  // Draw Ball
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff4757';
+  ctx.fill();
+  ctx.closePath();
+
+  // Energy Calculations
+  let height = Math.max(0, groundY - (ball.y + ball.radius));
+  let velocitySq = ball.vx * ball.vx + ball.vy * ball.vy;
+
+  let PE = mass * g * height * 0.1; 
+  let KE = 0.5 * mass * velocitySq * 0.1;
+  let maxBarHeight = 150;
+
+  // Render Energy Bars
+  drawBar(30, 180 - Math.min(PE, maxBarHeight), 30, Math.min(PE, maxBarHeight), '#2ed573', 'PE');
+  drawBar(70, 180 - Math.min(KE, maxBarHeight), 30, Math.min(KE, maxBarHeight), '#ffa502', 'KE');
+  drawBar(110, 180 - Math.min(PE + KE, maxBarHeight), 30, Math.min(PE + KE, maxBarHeight), '#1e90ff', 'Total');
+}
+
+let lastTime = performance.now();
+function gameLoop(now) {
+  let dt = (now - lastTime) / 1000;
+  lastTime = now;
+  if (dt < 0.1) { // Prevents huge frame jumps
+    updatePhysics(dt);
+  }
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
+"
